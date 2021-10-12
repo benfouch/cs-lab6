@@ -66,6 +66,9 @@ def http_server_setup(port):
         server_socket.close()
 
 
+
+
+
 def handle_request(request_socket):
     """
     Handle a single HTTP request, running on a newly started thread.
@@ -78,7 +81,11 @@ def handle_request(request_socket):
     :return: None
     """
 
-    pass  # Replace this line with your code
+    request_line = get_first_line(request_socket)
+    (request_type, requested_resource, version, is_valid) = read_request(request_line)
+
+    send_response(request_type, requested_resource, version, is_valid)
+
 
 
 # ** Do not modify code below this line.  You should add additional helper methods above this line.
@@ -86,6 +93,65 @@ def handle_request(request_socket):
 # Utility functions
 # You may use these functions to simplify your code.
 
+def send_response(request_type, requested_resource, version, is_valid):
+    # Start Making Our response
+    # add version, response code, response messgae
+    # add key value pairs we need, length ect
+    # read(length) of bytes and add the to the reponse
+    # send it back
+
+    status_code = b'404'
+    message = b'Not Found'
+
+    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    connection = b'close'
+
+
+    if is_valid:
+        if (requested_resource == b'index.html' or requested_resource == b'msoe.png' or
+                requested_resource == b'style.css' or requested_resource == b'/'):
+            status_code = b'200'
+            message = b'OK'
+
+        path = ".\\resources\\" + requested_resource.decode("ASCII")
+        length = get_file_size(path)
+        context_type = get_mime_type(path)
+
+    else:
+        status_code = b'400'
+        message = b'Bad Request'
+
+    return ""
+
+
+def get_first_line(request_socket):
+    """
+    Parses the first line of the message so that we can read it
+    """
+    line = b''
+    while not line.endswith(b'\r\n'):
+        line += request_socket.recv(1)
+    return line
+
+
+def read_request(request):
+    request_type = ""
+    requested_resource = ""
+    version = ""
+    is_valid = True
+
+    try:
+        split_request = request.split(b'\x20')
+
+        request_type = split_request[0]
+        requested_resource = split_request[1]
+        version = split_request[2]
+        if not version == b'HTTP/1.1':
+            raise Exception
+    except Exception:
+        is_valid = False
+
+    return(request_type, requested_resource, version, is_valid)
 
 def get_mime_type(file_path):
     """
