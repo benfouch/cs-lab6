@@ -84,8 +84,9 @@ def handle_request(request_socket):
     request_line = get_first_line(request_socket)
     (request_type, requested_resource, version, is_valid) = read_request(request_line)
 
-    send_response(request_type, requested_resource, version, is_valid)
+    dictionary = make_dictionary(request_type, requested_resource, version, is_valid)
 
+    send_response(dictionary, request_socket)
 
 
 # ** Do not modify code below this line.  You should add additional helper methods above this line.
@@ -93,19 +94,27 @@ def handle_request(request_socket):
 # Utility functions
 # You may use these functions to simplify your code.
 
-def send_response(request_type, requested_resource, version, is_valid):
-    # Start Making Our response
-    # add version, response code, response messgae
-    # add key value pairs we need, length ect
-    # read(length) of bytes and add the to the reponse
-    # send it back
 
+def send_response(dictionary, socket):
+    space = b' '
+    crlf = b'\r\n'
+    response = dictionary["version"] + space + dictionary["code"] + space + dictionary["message"] + crlf \
+    + b'Date: ' + dictionary["date"] + crlf \
+    + b'Content-Length: ' + dictionary["length"] + crlf \
+    + b'Content-Type: ' + dictionary["content type"] + crlf \
+    + b'Connection: ' + dictionary["connection"] + crlf \
+    + crlf \
+    + dictionary["body"]
+
+    socket.sendAll(response)
+
+
+def make_dictionary(request_type, requested_resource, version, is_valid):
     status_code = b'404'
     message = b'Not Found'
 
     date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
     connection = b'close'
-
 
     if is_valid:
         if (requested_resource == b'index.html' or requested_resource == b'msoe.png' or
@@ -117,11 +126,32 @@ def send_response(request_type, requested_resource, version, is_valid):
         length = get_file_size(path)
         context_type = get_mime_type(path)
 
+        body = get_body(path, length)
+
     else:
         status_code = b'400'
         message = b'Bad Request'
 
-    return ""
+    dictionary = {
+        "date" : date,
+        "connection" : connection,
+        "content type" : context_type,
+        "length" : length,
+        "code" : status_code,
+        "message" : message,
+        "version" : version,
+        "body" : body
+    }
+
+    return dictionary
+
+
+def get_body(path, length):
+    file = open(path, "r+")
+    body = file.read(length)
+    file.close()
+    return body
+
 
 
 def get_first_line(request_socket):
