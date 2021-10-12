@@ -116,7 +116,7 @@ def send_response(dictionary, tcp_socket):
                + crlf \
                + dictionary["body"]
 
-    tcp_socket.sendAll(response)
+    tcp_socket.sendall(response)
 
 
 def make_dictionary(request_type, requested_resource, version, is_valid):
@@ -138,8 +138,11 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
     status_code = b'404'
     message = b'Not Found'
 
-    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT').encode("ASCII")
     connection = b'close'
+    context_type = b''
+    length = b''
+    body = b''
 
     if is_valid:
         if (requested_resource == b'index.html' or requested_resource == b'msoe.png' or
