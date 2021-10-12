@@ -1,11 +1,12 @@
 """
 - NOTE: REPLACE 'N' Below with your section, year, and lab number
-- CS2911 - 0NN
-- Fall 202N
-- Lab N
+- CS2911 - 011
+- Fall 2021
+- Lab 6 - HTTP Server
 - Names:
-  - 
-  - 
+  - Ben Fouch
+  - Nathan Cernik
+  - Aidan Regan
 
 An HTTP server
 
@@ -66,9 +67,6 @@ def http_server_setup(port):
         server_socket.close()
 
 
-
-
-
 def handle_request(request_socket):
     """
     Handle a single HTTP request, running on a newly started thread.
@@ -95,21 +93,48 @@ def handle_request(request_socket):
 # You may use these functions to simplify your code.
 
 
-def send_response(dictionary, socket):
+def send_response(dictionary, tcp_socket):
+    """
+    Sends a response to a tcp request given a dictionary containing the headers and body and sending socket
+
+    :author:
+        - Ben Fouch
+        - Nathan Cernik
+        - Aidan Regan
+
+    :param dictionary: dictionary containing the headers and the body of the response message
+    :param tcp_socket: socket message is being sent from
+    :return: void
+    """
     space = b' '
     crlf = b'\r\n'
     response = dictionary["version"] + space + dictionary["code"] + space + dictionary["message"] + crlf \
-    + b'Date: ' + dictionary["date"] + crlf \
-    + b'Content-Length: ' + dictionary["length"] + crlf \
-    + b'Content-Type: ' + dictionary["content type"] + crlf \
-    + b'Connection: ' + dictionary["connection"] + crlf \
-    + crlf \
-    + dictionary["body"]
+               + b'Date: ' + dictionary["date"] + crlf \
+               + b'Content-Length: ' + dictionary["length"] + crlf \
+               + b'Content-Type: ' + dictionary["content type"] + crlf \
+               + b'Connection: ' + dictionary["connection"] + crlf \
+               + crlf \
+               + dictionary["body"]
 
-    socket.sendAll(response)
+    tcp_socket.sendAll(response)
 
 
 def make_dictionary(request_type, requested_resource, version, is_valid):
+    """
+    Makes a dictionary for a response message based off of the request message
+
+    :author:
+        - Ben Fouch
+        - Nathan Cernik
+        - Aidan Regan
+
+    :param request_type: type of network request ("GET, POST, etc.")
+    :param requested_resource: name of the resource that was requested
+    :param version: HTTP version used in the request
+    :param is_valid: true if request is in valid format, false otherwise
+    :return: dictionary with response header data and body
+    :rtype: dict
+    """
     status_code = b'404'
     message = b'Not Found'
 
@@ -133,30 +158,51 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
         message = b'Bad Request'
 
     dictionary = {
-        "date" : date,
-        "connection" : connection,
-        "content type" : context_type,
-        "length" : length,
-        "code" : status_code,
-        "message" : message,
-        "version" : version,
-        "body" : body
+        "date": date,
+        "connection": connection,
+        "content type": context_type,
+        "length": length,
+        "code": status_code,
+        "message": message,
+        "version": version,
+        "body": body
     }
 
     return dictionary
 
 
 def get_body(path, length):
+    """
+    Reads the requested resource, putting it's data into a byte string
+
+    :author:
+        - Ben Fouch
+        - Nathan Cernik
+        - Aidan Regan
+
+    :param path: path of the requested resource
+    :param length: length in bytes of the requested resource
+    :return: body
+    :rtype: bytes
+    """
     file = open(path, "r+")
     body = file.read(length)
     file.close()
     return body
 
 
-
 def get_first_line(request_socket):
     """
-    Parses the first line of the message so that we can read it
+    Parses the first line of the message so it can be broken down
+
+    :author:
+        - Ben Fouch
+        - Nathan Cernik
+        - Aidan Regan
+
+    :param request_socket: socket the request is received at
+    :return: the request line
+    :rtype: bytes
     """
     line = b''
     while not line.endswith(b'\r\n'):
@@ -165,6 +211,22 @@ def get_first_line(request_socket):
 
 
 def read_request(request):
+    """
+    Reads the request line and returns the important data
+
+    :author:
+        - Ben Fouch
+        - Nathan Cernik
+        - Aidan Regan
+
+    :param request: first line in the request (ex. "GET /index.html HTTP/1.1")
+    :return:
+        - request_type: type of request (ex. "GET")
+        - requested_resource: what resource was requested (ex. "/index.html")
+        - version: version of HTTP used (ex. "HTTP/1.1")
+        - is_valid: if the HTTP request was valid
+    :rtype: tuple
+    """
     request_type = ""
     requested_resource = ""
     version = ""
@@ -181,7 +243,8 @@ def read_request(request):
     except Exception:
         is_valid = False
 
-    return(request_type, requested_resource, version, is_valid)
+    return request_type, requested_resource, version, is_valid
+
 
 def get_mime_type(file_path):
     """
