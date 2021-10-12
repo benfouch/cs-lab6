@@ -15,7 +15,8 @@ Introduction: (Describe the lab in your own words)
 
 
 
-Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
+Summary: (Summarize your experience with the lab,
+what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
 
 
 
@@ -147,6 +148,9 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
     if is_valid:
         if (requested_resource == b'index.html' or requested_resource == b'msoe.png' or
                 requested_resource == b'style.css' or requested_resource == b'/'):
+
+            if requested_resource == b'/':
+                requested_resource = b'index.html'
             status_code = b'200'
             message = b'OK'
 
@@ -163,12 +167,12 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
     dictionary = {
         "date": date,
         "connection": connection,
-        "content type": context_type,
-        "length": length,
+        "content type": str.encode(context_type, 'ASCII'),
+        "length": length.to_bytes(2, 'big'),
         "code": status_code,
         "message": message,
         "version": version,
-        "body": body
+        "body": body.encode('ASCII')
     }
 
     return dictionary
@@ -240,7 +244,7 @@ def read_request(request):
 
         request_type = split_request[0]
         requested_resource = split_request[1]
-        version = split_request[2]
+        version = split_request[2].strip(b'\r\n')
         if not version == b'HTTP/1.1':
             raise Exception
     except Exception:
