@@ -1,12 +1,11 @@
 """
 - NOTE: REPLACE 'N' Below with your section, year, and lab number
-- CS2911 - 011
-- Fall 2021
-- Lab 6 - HTTP Server
+- CS2911 - 0NN
+- Fall 202N
+- Lab N
 - Names:
-  - Ben Fouch
-  - Nathan Cernik
-  - Aidan Regan
+  - 
+  - 
 
 An HTTP server
 
@@ -15,8 +14,7 @@ Introduction: (Describe the lab in your own words)
 
 
 
-Summary: (Summarize your experience with the lab,
-what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
+Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
 
 
 
@@ -30,6 +28,8 @@ import threading
 import os
 import mimetypes
 import datetime
+import os.path
+from os import path
 
 
 def main():
@@ -81,11 +81,11 @@ def handle_request(request_socket):
     """
 
     request_line = get_first_line(request_socket)
+    request_dictionary = make_request_dictionary(request_socket)
     (request_type, requested_resource, version, is_valid) = read_request(request_line)
-
     dictionary = make_dictionary(request_type, requested_resource, version, is_valid)
-
     send_response(dictionary, request_socket)
+    print(request_dictionary)
 
 
 # ** Do not modify code below this line.  You should add additional helper methods above this line.
@@ -94,71 +94,40 @@ def handle_request(request_socket):
 # You may use these functions to simplify your code.
 
 
-def send_response(dictionary, tcp_socket):
-    """
-    Sends a response to a tcp request given a dictionary containing the headers and body and sending socket
-
-    :author:
-        - Ben Fouch
-        - Nathan Cernik
-        - Aidan Regan
-
-    :param dictionary: dictionary containing the headers and the body of the response message
-    :param tcp_socket: socket message is being sent from
-    :return: void
-    """
+def send_response(dictionary, socket):
     space = b' '
     crlf = b'\r\n'
-    response = dictionary["version"] + space + dictionary["code"] + space + dictionary["message"] + crlf \
-               + b'Date: ' + dictionary["date"] + crlf \
-               + b'Content-Length: ' + dictionary["length"] + crlf \
-               + b'Content-Type: ' + dictionary["content type"] + crlf \
-               + b'Connection: ' + dictionary["connection"] + crlf \
-               + crlf \
-               + dictionary["body"]
+    response = dictionary["version"] + space + dictionary["code"] + space + dictionary["message"] + crlf + \
+               b'Date: ' + dictionary["date"] + crlf + \
+               b'Content-Length: ' + dictionary["length"] + crlf + \
+               b'Content-Type: ' + dictionary["content type"].encode() + crlf + \
+               b'Connection: ' + dictionary["connection"] + crlf + crlf + dictionary["body"] + crlf
 
-    tcp_socket.sendall(response)
+    socket.send(response)
 
 
 def make_dictionary(request_type, requested_resource, version, is_valid):
-    """
-    Makes a dictionary for a response message based off of the request message
-
-    :author:
-        - Ben Fouch
-        - Nathan Cernik
-        - Aidan Regan
-
-    :param request_type: type of network request ("GET, POST, etc.")
-    :param requested_resource: name of the resource that was requested
-    :param version: HTTP version used in the request
-    :param is_valid: true if request is in valid format, false otherwise
-    :return: dictionary with response header data and body
-    :rtype: dict
-    """
     status_code = b'404'
     message = b'Not Found'
 
-    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT').encode("ASCII")
-    connection = b'close'
-    context_type = b''
+    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT').encode()
+    connection = b'Close'
+
     length = b''
+    context_type = ""
     body = b''
 
     if is_valid:
-        if (requested_resource == b'index.html' or requested_resource == b'msoe.png' or
-                requested_resource == b'style.css' or requested_resource == b'/'):
-
-            if requested_resource == b'/':
-                requested_resource = b'index.html'
+        file_path = ".\\resources\\" + (
+            requested_resource.decode("ASCII") if not requested_resource == b'/' else "index.html")
+        if path.exists(file_path):
             status_code = b'200'
             message = b'OK'
 
-        path = ".\\resources\\" + requested_resource.decode("ASCII")
-        length = get_file_size(path)
-        context_type = get_mime_type(path)
-
-        body = get_body(path, length)
+        if status_code == b'200':
+            length = str(get_file_size(file_path)).encode("ASCII")
+            context_type = get_mime_type(file_path)
+            body = get_body(file_path, int(length.decode("ASCII")))
 
     else:
         status_code = b'400'
@@ -167,49 +136,42 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
     dictionary = {
         "date": date,
         "connection": connection,
-        "content type": str.encode(context_type, 'ASCII'),
-        "length": length.to_bytes(2, 'big'),
+        "content type": context_type,
+        "length": length,
         "code": status_code,
         "message": message,
         "version": version,
-        "body": body.encode('ASCII')
+        "body": body
     }
 
     return dictionary
 
 
 def get_body(path, length):
-    """
-    Reads the requested resource, putting it's data into a byte string
-
-    :author:
-        - Ben Fouch
-        - Nathan Cernik
-        - Aidan Regan
-
-    :param path: path of the requested resource
-    :param length: length in bytes of the requested resource
-    :return: body
-    :rtype: bytes
-    """
-    file = open(path, "r+")
+    file = open(path, "rb+")
     body = file.read(length)
     file.close()
     return body
 
 
+def make_request_dictionary(request_socket):
+    line = b''
+    dictionary = {}
+
+    while not line == b'\r\n':
+        line = b''
+        while not line.endswith(b'\r\n'):
+            line += request_socket.recv(1)
+        if not line == b'\r\n':
+            split_line = line.split(b':')
+            dictionary.update({split_line[0]: split_line[1]})
+
+    return dictionary
+
+
 def get_first_line(request_socket):
     """
-    Parses the first line of the message so it can be broken down
-
-    :author:
-        - Ben Fouch
-        - Nathan Cernik
-        - Aidan Regan
-
-    :param request_socket: socket the request is received at
-    :return: the request line
-    :rtype: bytes
+    Parses the first line of the message so that we can read it
     """
     line = b''
     while not line.endswith(b'\r\n'):
@@ -218,22 +180,6 @@ def get_first_line(request_socket):
 
 
 def read_request(request):
-    """
-    Reads the request line and returns the important data
-
-    :author:
-        - Ben Fouch
-        - Nathan Cernik
-        - Aidan Regan
-
-    :param request: first line in the request (ex. "GET /index.html HTTP/1.1")
-    :return:
-        - request_type: type of request (ex. "GET")
-        - requested_resource: what resource was requested (ex. "/index.html")
-        - version: version of HTTP used (ex. "HTTP/1.1")
-        - is_valid: if the HTTP request was valid
-    :rtype: tuple
-    """
     request_type = ""
     requested_resource = ""
     version = ""
@@ -244,7 +190,7 @@ def read_request(request):
 
         request_type = split_request[0]
         requested_resource = split_request[1]
-        version = split_request[2].strip(b'\r\n')
+        version = split_request[2].split(b'\r\n')[0]
         if not version == b'HTTP/1.1':
             raise Exception
     except Exception:
