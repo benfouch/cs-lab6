@@ -1,29 +1,24 @@
 """
-- NOTE: REPLACE 'N' Below with your section, year, and lab number
-- CS2911 - 0NN
-- Fall 202N
-- Lab N
+- CS2911 - 011
+- Fall 2021
+- Lab 6
 - Names:
-  - 
-  - 
+  - Ben Fouch
+  - Nathan Cernik
+  - Aidan Regan
 
 An HTTP server
 
-Introduction: (Describe the lab in your own words)
-
-
-
+Introduction: (Describe the lab in your own words) :
+    This lab is to teach us HTTP responses are structured. It also helps enforce the Http request format.
+    This was also effective at teaching us python tools like dictionaries.
 
 Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
-
-
-
-
-
+    This was a great lab! We enjoyed it being a good puzzle and being a bit confusing at type with all type conversions
+    Overall, nothing we would change, the supplied methods were very helpful and it was a good lab load for a midterm week.
 """
 
 import socket
-import re
 import threading
 import os
 import mimetypes
@@ -88,13 +83,12 @@ def handle_request(request_socket):
     print(request_dictionary)
 
 
-# ** Do not modify code below this line.  You should add additional helper methods above this line.
-
-# Utility functions
-# You may use these functions to simplify your code.
-
-
 def send_response(dictionary, socket):
+    """
+    Makes and sends the response
+    :Author: Nathan Cernik
+    """
+
     space = b' '
     crlf = b'\r\n'
     response = dictionary["version"] + space + dictionary["code"] + space + dictionary["message"] + crlf + \
@@ -106,20 +100,23 @@ def send_response(dictionary, socket):
     socket.send(response)
 
 
-def make_dictionary(request_type, requested_resource, version, is_valid):
+def make_dictionary(requested_resource, version, is_valid):
+    """
+    Detriments the values of all the key value pairs for the response message
+    :author: All
+    """
     status_code = b'404'
     message = b'Not Found'
-
-    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT').encode()
-    connection = b'Close'
-
     length = b''
     context_type = ""
     body = b''
+    connection = b'Close'
+    date = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT').encode()
 
     if is_valid:
         file_path = ".\\resources\\" + (
             requested_resource.decode("ASCII") if not requested_resource == b'/' else "index.html")
+
         if path.exists(file_path):
             status_code = b'200'
             message = b'OK'
@@ -147,14 +144,22 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
     return dictionary
 
 
-def get_body(path, length):
-    file = open(path, "rb+")
+def get_body(file_path, length):
+    """
+    Gets the bytes object of the body of the request message
+    :Author: Ben Fouch
+    """
+    file = open(file_path, "rb+")
     body = file.read(length)
     file.close()
     return body
 
 
 def make_request_dictionary(request_socket):
+    """
+    Makes the dictionary from the key value pairs fo the http request
+    :Author: Ben Fouch
+    """
     line = b''
     dictionary = {}
 
@@ -172,6 +177,7 @@ def make_request_dictionary(request_socket):
 def get_first_line(request_socket):
     """
     Parses the first line of the message so that we can read it
+    :Author: Ben Fouch
     """
     line = b''
     while not line.endswith(b'\r\n'):
@@ -180,6 +186,12 @@ def get_first_line(request_socket):
 
 
 def read_request(request):
+    """
+    Reads the first line of the request, pareses out the values from the request
+
+    :return: The parsed values of the request line
+    :Author: Aidan Regan
+    """
     request_type = ""
     requested_resource = ""
     version = ""
