@@ -1,29 +1,33 @@
 """
 - NOTE: REPLACE 'N' Below with your section, year, and lab number
-- CS2911 - 0NN
-- Fall 202N
-- Lab N
+- CS2911 - 011
+- Fall 2021
+- Lab 6 - HTTP Server
 - Names:
-  - 
-  - 
+  - Nathan Cernik
+  - Ben Fouch
+  - Aidan Regan
 
 An HTTP server
 
 Introduction: (Describe the lab in your own words)
+In the week 6 Lab, we were tasked with doing the opposite of the week 5 Lab. Instead of representing the client
+receiving a message, we acted as the server sending the message.  We had to receive a request from the client,
+parse it, and determine what the client wanted from our "server".
 
 
-
-
-Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
-
-
-
-
+Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked,
+and any suggestions you have for improvement)
+This week's lab in conjunction with last week's lab allowed us to practice sending and receiving HTTP messages very
+explicitly. For us, this lab went mostly smooth. On the first day we pretty much finished the bulk of the code,
+leaving just working out the bugs and getting everything working correctly to do for the rest of the week. Our main
+issue was just not converting certain fields to ASCII text instead of just raw bytes in the HTTP headers.
+This was a good learning experience though, but despite this, was annoying and was the once piece of this lab that we
+could say we disliked.  Otherwise this lab was very informative.
 
 """
 
 import socket
-import re
 import threading
 import os
 import mimetypes
@@ -94,19 +98,42 @@ def handle_request(request_socket):
 # You may use these functions to simplify your code.
 
 
-def send_response(dictionary, socket):
+def send_response(dictionary, tcp_socket):
+    """
+       Sends a response to a tcp request given a dictionary containing the headers and body and sending socket
+       :author:
+           - Ben Fouch
+           - Nathan Cernik
+           - Aidan Regan
+       :param dictionary: dictionary containing the headers and the body of the response message
+       :param tcp_socket: socket message is being sent from
+       :return: void
+    """
     space = b' '
     crlf = b'\r\n'
     response = dictionary["version"] + space + dictionary["code"] + space + dictionary["message"] + crlf + \
-               b'Date: ' + dictionary["date"] + crlf + \
-               b'Content-Length: ' + dictionary["length"] + crlf + \
-               b'Content-Type: ' + dictionary["content type"].encode() + crlf + \
-               b'Connection: ' + dictionary["connection"] + crlf + crlf + dictionary["body"] + crlf
+        b'Date: ' + dictionary["date"] + crlf + \
+        b'Content-Length: ' + dictionary["length"] + crlf + \
+        b'Content-Type: ' + dictionary["content type"].encode() + crlf + \
+        b'Connection: ' + dictionary["connection"] + crlf + crlf + dictionary["body"] + crlf
 
-    socket.send(response)
+    tcp_socket.send(response)
 
 
 def make_dictionary(request_type, requested_resource, version, is_valid):
+    """
+        Makes a dictionary for a response message based off of the request message
+        :author:
+            - Ben Fouch
+            - Nathan Cernik
+            - Aidan Regan
+        :param request_type: type of network request ("GET, POST, etc.")
+        :param requested_resource: name of the resource that was requested
+        :param version: HTTP version used in the request
+        :param is_valid: true if request is in valid format, false otherwise
+        :return: dictionary with response header data and body
+        :rtype: dict
+    """
     status_code = b'404'
     message = b'Not Found'
 
@@ -147,14 +174,33 @@ def make_dictionary(request_type, requested_resource, version, is_valid):
     return dictionary
 
 
-def get_body(path, length):
-    file = open(path, "rb+")
+def get_body(file_path, length):
+    """
+       Reads the requested resource, putting it's data into a byte string
+       :author:
+           - Ben Fouch
+           - Nathan Cernik
+           - Aidan Regan
+       :param file_path: path of the requested resource
+       :param length: length in bytes of the requested resource
+       :return: body
+       :rtype: bytes
+    """
+    file = open(file_path, "rb+")
     body = file.read(length)
     file.close()
     return body
 
 
 def make_request_dictionary(request_socket):
+    """
+    makes a dictionary for the request message
+
+    :param request_socket: socket the request is read from
+    :return: dictionary
+    :rtype: dict
+    """
+
     line = b''
     dictionary = {}
 
@@ -171,7 +217,14 @@ def make_request_dictionary(request_socket):
 
 def get_first_line(request_socket):
     """
-    Parses the first line of the message so that we can read it
+        Parses the first line of the message so it can be broken down
+        :author:
+            - Ben Fouch
+            - Nathan Cernik
+            - Aidan Regan
+        :param request_socket: socket the request is received at
+        :return: the request line
+        :rtype: bytes
     """
     line = b''
     while not line.endswith(b'\r\n'):
@@ -180,6 +233,20 @@ def get_first_line(request_socket):
 
 
 def read_request(request):
+    """
+        Reads the request line and returns the important data
+        :author:
+            - Ben Fouch
+            - Nathan Cernik
+            - Aidan Regan
+        :param request: first line in the request (ex. "GET /index.html HTTP/1.1")
+        :return:
+            - request_type: type of request (ex. "GET")
+            - requested_resource: what resource was requested (ex. "/index.html")
+            - version: version of HTTP used (ex. "HTTP/1.1")
+            - is_valid: if the HTTP request was valid
+        :rtype: tuple
+    """
     request_type = ""
     requested_resource = ""
     version = ""
@@ -192,8 +259,8 @@ def read_request(request):
         requested_resource = split_request[1]
         version = split_request[2].split(b'\r\n')[0]
         if not version == b'HTTP/1.1':
-            raise Exception
-    except Exception:
+            raise IOError
+    except IOError:
         is_valid = False
 
     return request_type, requested_resource, version, is_valid
